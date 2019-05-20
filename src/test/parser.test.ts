@@ -7,9 +7,26 @@ import * as assert from 'assert';
 import { getNodePath, getNodeValue, JSONDocumentConfig, parse, JSONDocument } from '../parser/jsonParser';
 import * as JsonSchema from '../jsonSchema';
 import { TextDocument, Range } from 'vscode-languageserver-types';
-import { ErrorCode, ASTNode, ObjectASTNode, getLanguageService } from '../jsonLanguageService';
+import { ErrorCode, ASTNode, ObjectASTNode, getLanguageService, JSONSchema, SchemaRequestService } from '../jsonLanguageService';
 
 suite('JSON Parser', () => {
+
+	function newMockRequestService(schemas: { [uri: string]: JSONSchema } = {}, accesses: string[] = []): SchemaRequestService {
+
+		return (uri: string): Promise<string> => {
+			if (uri.length && uri[uri.length - 1] === '#') {
+				uri = uri.substr(0, uri.length - 1);
+			}
+			let schema = schemas[uri];
+			if (schema) {
+				if (accesses.indexOf(uri) === -1) {
+					accesses.push(uri);
+				}
+				return Promise.resolve(JSON.stringify(schema));
+			}
+			return Promise.reject<string>("Resource not found.");
+		};
+	}
 
 	function isValid(json: string): void {
 		let { jsonDoc } = toDocument(json);
@@ -1871,6 +1888,46 @@ suite('JSON Parser', () => {
 		res = await ls.doValidation(textDoc, jsonDoc, { trailingCommas: 'ignore' }, schema);
 		assert.strictEqual(res.length, 1);
 		assert.strictEqual(res[0].message, 'Missing property "foo".');
+	});
+	test('validate with dynamic ref', async function () {
+		let instanceData = {
+			type: "aaa"
+		}
+		let schema: JsonSchema.JSONSchema = {
+			type: 'object',
+			properties: {
+				type: {
+					type: 'object'
+				},
+				name: {
+					$ref: {
+						href:"http://my-host/enum/{type}",
+						templatePointers:{
+							type: "/type"
+						}
+					}
+				}
+			}
+		};
+		let schemas = {
+			"http://my-host/enum/aaa": {
+				type: 'string',
+				enum:[
+					"aaa"
+				]
+			}
+		}
+		const ls = getLanguageService({schemaRequestService: newMockRequestService(schemas)});
+		//positive
+		let docs = toDocument('{ "name": "aaa" }');
+		let res = await ls.doValidation(docs.textDoc, docs.jsonDoc,{ trailingCommas: 'ignore' }, schema, instanceData);
+		assert.strictEqual(res.length, 0);
+	
+		// negative
+		docs = toDocument('{ "name": "Peter" }');
+		res = await ls.doValidation(docs.textDoc, docs.jsonDoc,{ trailingCommas: 'ignore' }, schema, instanceData);
+		assert.strictEqual(res.length, 1);
+		assert.notEqual(res[0].message.search("Value is not accepted"), -1);
 	});
 	
 });

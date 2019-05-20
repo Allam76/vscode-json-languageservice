@@ -180,6 +180,67 @@ suite('JSON Schema', () => {
 		});
 
 	});
+	test('Resolving dynamic $refs', async function () {
+		let schemas = {
+			"http://my-host/enum/aaa": {
+				type: 'string',
+				enum:[
+					"aaa"
+				]
+			},
+			"http://my-host/enum/aaa/object":{
+				type:"object",
+				properties:{
+					name:{
+						type: 'string',
+						enum:[
+							"bbb"
+						]
+					}
+				}
+			}
+		}
+
+		let service = new SchemaService.JSONSchemaService(newMockRequestService(schemas), workspaceContext);
+		service.setSchemaContributions({
+			schemas: {
+				"https://myschemastore/main/schema1.json": {
+					id: 'https://myschemastore/schema1.json',
+					type: 'object',
+					properties: {
+						p1: {
+							'$ref': {
+								href:"http://my-host/enum/{type}",
+								templatePointers:{
+									type: "/type"
+								}
+							}
+						},
+						p2: {
+							'$ref': {
+								href:"http://my-host/enum/{type}/object#/properties/name",
+								templatePointers:{
+									type: "/type"
+								}
+							}
+						}
+					}
+				}
+			}
+		});
+		let instData = {type: "aaa"};
+		return service.getResolvedSchema('https://myschemastore/main/schema1.json', instData).then(fs => {
+			assert.deepEqual(fs.schema.properties['p1'], {
+				type: 'string',
+				enum: ["aaa"]
+			});
+			assert.deepEqual(fs.schema.properties['p2'], {
+				type: 'string',
+				enum: ["bbb"]
+			});
+		});
+
+	});
 
 	test('FileSchema', async function () {
 		let service = new SchemaService.JSONSchemaService(newMockRequestService(), workspaceContext);

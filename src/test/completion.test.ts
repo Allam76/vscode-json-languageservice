@@ -47,12 +47,27 @@ let assertCompletion = function (completions: CompletionList, expected: ItemDesc
 };
 
 suite('JSON Completion', () => {
+	function newMockRequestService(schemas: { [uri: string]: jsonLanguageService.JSONSchema } = {}, accesses: string[] = []): jsonLanguageService.SchemaRequestService {
 
-	let testCompletionsFor = function (value: string, schema: JsonSchema.JSONSchema, expected: { count?: number, items?: ItemDescription[] }, clientCapabilities = ClientCapabilities.LATEST): PromiseLike<void> {
+		return (uri: string): Promise<string> => {
+			if (uri.length && uri[uri.length - 1] === '#') {
+				uri = uri.substr(0, uri.length - 1);
+			}
+			let schema = schemas[uri];
+			if (schema) {
+				if (accesses.indexOf(uri) === -1) {
+					accesses.push(uri);
+				}
+				return Promise.resolve(JSON.stringify(schema));
+			}
+			return Promise.reject<string>("Resource not found.");
+		};
+	}
+	let testCompletionsFor = function (value: string, schema: JsonSchema.JSONSchema, expected: { count?: number, items?: ItemDescription[] }, clientCapabilities = ClientCapabilities.LATEST, data?: Object, schemas: { [uri: string]: jsonLanguageService.JSONSchema } = {}): PromiseLike<void> {
 		let offset = value.indexOf('|');
 		value = value.substr(0, offset) + value.substr(offset + 1);
 
-		let ls = jsonLanguageService.getLanguageService({ clientCapabilities });
+		let ls = jsonLanguageService.getLanguageService({ clientCapabilities, schemaRequestService: newMockRequestService(schemas) });
 		if (schema) {
 			ls.configure({
 				schemas: [{
@@ -66,7 +81,7 @@ suite('JSON Completion', () => {
 		let document = TextDocument.create('test://test/test.json', 'json', 0, value);
 		let position = Position.create(0, offset);
 		let jsonDoc = ls.parseJSONDocument(document);
-		return ls.doComplete(document, position, jsonDoc).then(list => {
+		return ls.doComplete(document, position, jsonDoc, data).then(list => {
 			if (expected.count) {
 				assert.equal(list.items.length, expected.count, value + ' ' + list.items.map(i => i.label).join(', '));
 			}
@@ -1194,5 +1209,40 @@ suite('JSON Completion', () => {
 		await testCompletionsFor('{"a":"test",|}', {
 			if: { properties: { a: { type: "string" } }, required: ["a"] }, then: { properties: { b: { type: "string" } } }
 		}, { count: 1, items: [{ label: "b", resultText: '{"a":"test","b": "$1"}' }] });
+	});
+	test('Enum from dynamic content', async function () {
+		let schema: JsonSchema.JSONSchema = {
+			type: 'object',
+			properties: {
+				type: {
+					type: 'object'
+				},
+				name: {
+					$ref: {
+						href:"http://my-host/enum/{type}",
+						templatePointers:{
+							type: "/type"
+						}
+					}
+				}
+			}
+		};
+		let instanceData = {
+			type: "aaa"
+		}
+		let schemas = {
+			"http://my-host/enum/aaa": {
+				type: 'string',
+				enum:[
+					"bbb"
+				]
+			}
+		}
+
+		await testCompletionsFor('{ "name": | }', schema, {
+			items: [
+				{ label: '"bbb"', resultText: '{ "name": "bbb" }' }
+			]
+		}, undefined, instanceData, schemas);
 	});
 });

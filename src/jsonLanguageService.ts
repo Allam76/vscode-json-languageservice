@@ -37,12 +37,12 @@ export {
 
 export interface LanguageService {
 	configure(settings: LanguageSettings): void;
-	doValidation(document: TextDocument, jsonDocument: JSONDocument, documentSettings?: DocumentLanguageSettings, schema?: JSONSchema): Thenable<Diagnostic[]>;
+	doValidation(document: TextDocument, jsonDocument: JSONDocument, documentSettings?: DocumentLanguageSettings, schema?: JSONSchema, data?: Object): Thenable<Diagnostic[]>;
 	parseJSONDocument(document: TextDocument): JSONDocument;
 	newJSONDocument(rootNode: ASTNode, syntaxDiagnostics?: Diagnostic[]): JSONDocument;
 	resetSchema(uri: string): boolean;
 	doResolve(item: CompletionItem): Thenable<CompletionItem>;
-	doComplete(document: TextDocument, position: Position, doc: JSONDocument): Thenable<CompletionList | null>;
+	doComplete(document: TextDocument, position: Position, doc: JSONDocument, data?: Object): Thenable<CompletionList | null>;
 	findDocumentSymbols(document: TextDocument, doc: JSONDocument): SymbolInformation[];
 	findDocumentSymbols2(document: TextDocument, doc: JSONDocument): DocumentSymbol[];
 	/** deprecated, use findDocumentColors instead */

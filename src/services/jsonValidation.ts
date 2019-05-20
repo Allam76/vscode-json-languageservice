@@ -33,7 +33,7 @@ export class JSONValidation {
 		}
 	}
 
-	public doValidation(textDocument: TextDocument, jsonDocument: JSONDocument, documentSettings?: DocumentLanguageSettings, schema?: JSONSchema): Thenable<Diagnostic[]> {
+	public doValidation(textDocument: TextDocument, jsonDocument: JSONDocument, documentSettings?: DocumentLanguageSettings, schema?: JSONSchema, data?: Object): Thenable<Diagnostic[]> {
 		if (!this.validationEnabled) {
 			return this.promise.resolve([]);
 		}
@@ -95,11 +95,11 @@ export class JSONValidation {
 
 		if (schema) {
 			const id = schema.id || ('schemaservice://untitled/' + idCounter++);
-			return this.jsonSchemaService.resolveSchemaContent(new UnresolvedSchema(schema), id, {}).then(resolvedSchema => {
+			return this.jsonSchemaService.resolveSchemaContent(new UnresolvedSchema(schema), id, {}, data).then(resolvedSchema => {
 				return getDiagnostics(resolvedSchema);
 			});
 		}
-		return this.jsonSchemaService.getSchemaForResource(textDocument.uri, jsonDocument).then(schema => {
+		return this.jsonSchemaService.getSchemaForResource(textDocument.uri, jsonDocument, data).then(schema => {
 			return getDiagnostics(schema);
 		});
 	}

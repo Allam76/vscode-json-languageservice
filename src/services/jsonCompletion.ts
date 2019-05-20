@@ -45,7 +45,7 @@ export class JSONCompletion {
 		return this.promiseConstructor.resolve(item);
 	}
 
-	public doComplete(document: TextDocument, position: Position, doc: Parser.JSONDocument): Thenable<CompletionList> {
+	public doComplete(document: TextDocument, position: Position, doc: Parser.JSONDocument, data?: Object): Thenable<CompletionList> {
 
 		let result: CompletionList = {
 			items: [],
@@ -100,7 +100,7 @@ export class JSONCompletion {
 			}
 		};
 
-		return this.schemaService.getSchemaForResource(document.uri, doc).then((schema) => {
+		return this.schemaService.getSchemaForResource(document.uri, doc, data).then((schema) => {
 			let collectionPromises: Thenable<any>[] = [];
 
 			let addValue = true;

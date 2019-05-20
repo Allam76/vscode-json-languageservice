@@ -1,8 +1,17 @@
+import { JSONDocumentSymbols } from "./services/jsonDocumentSymbols";
+
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 export type JSONSchemaRef = JSONSchema | boolean;
+export interface JSONTemplatePointers {
+	type: string;
+}
+export interface JSONRefType {
+	href: string;
+	templatePointers: JSONTemplatePointers;
+}
 
 export interface JSONSchema {
 	id?: string;
@@ -33,7 +42,7 @@ export interface JSONSchema {
 	exclusiveMaximum?: boolean | number;
 	multipleOf?: number;
 	required?: string[];
-	$ref?: string;
+	$ref?: string | JSONRefType;
 	anyOf?: JSONSchemaRef[];
 	allOf?: JSONSchemaRef[];
 	oneOf?: JSONSchemaRef[];
