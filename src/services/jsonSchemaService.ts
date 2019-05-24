@@ -437,7 +437,7 @@ export class JSONSchemaService implements IJSONSchemaService {
 			});
 		};
 
-		let resolveRefs = (node: JSONSchema, parentSchema: JSONSchema, parentSchemaURL: string, parentSchemaDependencies: SchemaDependencies): Thenable<any> => {
+		let resolveRefs = (node: JSONSchema, parentSchema: JSONSchema, parentSchemaURL: string, parentSchemaDependencies: SchemaDependencies, instanceData?: Object): Thenable<any> => {
 			if (!node || typeof node !== 'object') {
 				return Promise.resolve(null);
 			}
@@ -548,7 +548,7 @@ export class JSONSchemaService implements IJSONSchemaService {
 			return this.promise.all(openPromises);
 		};
 
-		return resolveRefs(schema, schema, schemaURL, dependencies).then(_ => new ResolvedSchema(schema, resolveErrors));
+		return resolveRefs(schema, schema, schemaURL, dependencies, instanceData).then(_ => new ResolvedSchema(schema, resolveErrors));
 	}
 
 	public getSchemaForResource(resource: string, document: Parser.JSONDocument, data?: Object): Thenable<ResolvedSchema> {
