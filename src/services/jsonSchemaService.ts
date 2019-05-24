@@ -433,7 +433,7 @@ export class JSONSchemaService implements IJSONSchemaService {
 					resolveErrors.push(localize('json.schema.problemloadingref', 'Problems loading reference \'{0}\': {1}', loc, unresolvedSchema.errors[0]));
 				}
 				merge(node, unresolvedSchema.schema, uri, linkPath);
-				return resolveRefs(node, unresolvedSchema.schema, uri, referencedHandle.dependencies);
+				return resolveRefs(node, unresolvedSchema.schema, uri, referencedHandle.dependencies, instanceData);
 			});
 		};
 
